@@ -1,73 +1,70 @@
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.7;
 
-interface IERC20{
+//ERC Token Standard #20 Interface
+interface ERC20Interface{
+    function totalSupply() external view returns (uint);
+    function balanceOf(address tokenOwner) external view returns (uint balance);
+    function allowance(address tokenOwner, address spender) external view returns (uint remaining);
 
-    //getters
-    function totalSupply() external view returns(uint256);
-    function balanceOf(address account) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
-
-    //functions
-    function transfer(address recipient, uint256 amount) external returns (bool);
-    function approve(address spender, uint256 amount) external returns (bool);
-    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256);
-
+    function transfer(address to, uint tokens) external returns (bool success);
+    function approve(address spender, uint tokens) external returns (bool success);
+    function transferFrom(address from, address to, uint tokens) external returns (bool success);
+ 
+    event Transfer(address indexed from, address indexed to, uint tokens);
+    event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
 }
-
-contract ADToken is IERC20{
-
+ 
+//Actual token contract 
+contract ADToken is ERC20Interface{
     string public constant name = "Angelo Daiher Token";
     string public constant symbol = "ADT";
-    uint8 public constant decimals = 18;
-
-    mapping (address => uint256) balances;
-
-    mapping(address => mapping(address=>uint256)) allowed;
-
-    uint256 totalSupply_ = 10 ether;
-
-    constructor(){
-        balances[msg.sender] = totalSupply_;
+    uint8 public decimals = 2;
+    uint256 public _totalSupply;
+ 
+    mapping(address => uint) balances;
+    mapping(address => mapping(address => uint)) allowed;
+ 
+    constructor() {
+        _totalSupply = 100000000;
+        balances[msg.sender] = _totalSupply;
     }
-
+ 
     function totalSupply() public override view returns (uint256) {
-        return totalSupply_;
+        return _totalSupply;
     }
-
-    function balanceOf(address tokenOwner) public override view returns (uint256){
+ 
+    function balanceOf(address tokenOwner) public override view returns (uint256) {
         return balances[tokenOwner];
     }
+ 
+    function transfer(address to, uint tokens) public override returns (bool success) {
+        require(tokens <= balances[msg.sender]);
 
-    function transfer(address receiver, uint256 numTokens) public override returns (bool) {
-        require(numTokens <= balances[msg.sender]);
-        balances[msg.sender] = balances[msg.sender]-numTokens;
-        balances[receiver] = balances[receiver]+numTokens;
-        emit Transfer(msg.sender, receiver, numTokens);
+        balances[msg.sender] = balances[msg.sender] - tokens;
+        balances[to] = balances[to] + tokens;
+        emit Transfer(msg.sender, to, tokens);
+        return true;
+    }
+ 
+    function approve(address spender, uint256 tokens) public override returns (bool success) {
+        allowed[msg.sender][spender] = tokens;
+        emit Approval(msg.sender, spender, tokens);
         return true;
     }
 
-    function approve(address delegate, uint256 numTokens) public override returns (bool) {
-        allowed[msg.sender][delegate] = numTokens;
-        emit Approval(msg.sender, delegate, numTokens);
+    function allowance(address tokenOwner, address spender) public override view returns (uint remaining) {
+        return allowed[tokenOwner][spender];
+    }
+
+    function transferFrom(address from, address to, uint256 tokens) public override returns (bool success) {
+        require(tokens <= balances[msg.sender]);
+        require(tokens <= allowed[from][msg.sender]);
+
+        balances[from] = balances[from] - tokens;
+        allowed[from][msg.sender] = allowed[from][msg.sender] - tokens;
+        balances[to] = balances[to] + tokens;
+        emit Transfer(from, to, tokens);
         return true;
     }
-
-    function allowance(address owner, address delegate) public override view returns (uint) {
-        return allowed[owner][delegate];
-    }
-
-    function transferFrom(address owner, address buyer, uint256 numTokens) public override returns (bool) {
-        require(numTokens <= balances[owner]);
-        require(numTokens <= allowed[owner][msg.sender]);
-
-        balances[owner] = balances[owner]-numTokens;
-        allowed[owner][msg.sender] = allowed[owner][msg.sender]-numTokens;
-        balances[buyer] = balances[buyer]+numTokens;
-        emit Transfer(owner, buyer, numTokens);
-        return true;
-    }
-
-}
+} 
