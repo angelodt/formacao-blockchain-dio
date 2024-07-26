@@ -17,7 +17,7 @@ interface IERC20{
 
 }
 
-contract DIOToken is IERC20{
+contract ADToken is IERC20{
 
     string public constant name = "Angelo Daiher Token";
     string public constant symbol = "ADT";
